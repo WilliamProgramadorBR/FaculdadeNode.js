@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agenda de Tarefas</title>
+  <link rel="stylesheet" href="style.css"> 
+</head>
+<body>
+  <div class="container">
+    <h1>Agenda de Tarefas</h1>
+
+    <form id="formTarefa">
+      <label for="descricao">Descrição da Tarefa:</label>
+      <input type="text" id="descricao" name="descricao" required>
+
+      <label for="dataEntrega">Data de Entrega:</label>
+      <input type="date" id="dataEntrega" name="dataEntrega" required>
+
+      <button type="submit">Adicionar Tarefa</button>
+    </form>
+
+    <h2>Tarefas Agendadas</h2>
+    <ul id="listaTarefas">
+     
+    </ul>
+  </div>
+
+  <script>
+    const form = document.getElementById('formTarefa');
+    const listaTarefas = document.getElementById('listaTarefas');
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const descricao = document.getElementById('descricao').value;
+      const dataEntrega = document.getElementById('dataEntrega').value;
+
+      // Confirmação antes de adicionar a tarefa
+      if (window.confirm('Deseja realmente adicionar esta tarefa?')) {
+        // Realizar requisição POST para adicionar tarefa
+        fetch('http://localhost:3001/tarefas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ descricao, data_entrega: dataEntrega }),
+        })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Tarefa adicionada:', data);
+          
+          // Atualizar a lista de tarefas após adicionar uma nova
+          getTarefas();
+      
+         })
+        .catch(error => console.error('Erro ao adicionar tarefa:', error));
+        getTarefas();
+      }
+      
+    });
+
+    // Função para obter a lista de tarefas
+    function getTarefas() {
+      // Realizar requisição GET para obter tarefas
+      fetch('http://localhost:3001/tarefas')
+        .then(response => response.json())
+        .then(tarefas => {
+          // Limpar a lista de tarefas antes de atualizar
+          listaTarefas.innerHTML = '';
+
+          // Adicionar tarefas à lista
+          tarefas.forEach(tarefa => {
+            const li = document.createElement('li');
+            const dataEntregaFormatada = new Date(tarefa.data_entrega).toLocaleDateString('pt-BR');
+            li.textContent = `${tarefa.descricao} - ${dataEntregaFormatada}`;
+
+            // Adicionar botão de exclusão
+            const btnExcluir = document.createElement('button');
+            btnExcluir.textContent = 'Excluir';
+            btnExcluir.style.marginLeft = '10px';
+            btnExcluir.addEventListener('click', () => excluirTarefa(tarefa.id));
+
+            li.appendChild(btnExcluir);
+
+            listaTarefas.appendChild(li);
+          });
+        })
+        .catch(error => console.error('Erro ao obter tarefas:', error));
+    }
+
+    // Função para excluir uma tarefa
+    function excluirTarefa(tarefaId) {
+      // Confirmação antes de excluir a tarefa
+      if (window.confirm('Deseja realmente excluir esta tarefa?')) {
+        fetch(`http://localhost:3001/tarefas/${tarefaId}`, {
+          method: 'DELETE',
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erro ao excluir tarefa');
+          }
+          console.log('Tarefa excluída com sucesso');
+          // Atualizar a lista de tarefas após excluir uma tarefa
+          getTarefas();
+        })
+        .catch(error => console.error('Erro ao excluir tarefa:', error));
+      }
+    }
+
+    // Chamar a função para obter tarefas ao carregar a página
+    getTarefas();
+  </script>
+</body>
+</html>
